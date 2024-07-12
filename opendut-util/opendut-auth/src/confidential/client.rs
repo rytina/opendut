@@ -1,18 +1,20 @@
 use std::fmt::Formatter;
 use std::sync::Arc;
+
 use chrono::{NaiveDateTime, Utc};
 use config::Config;
 use oauth2::{AccessToken, TokenResponse};
-use oauth2::basic::{BasicClient, BasicTokenResponse};
+use oauth2::basic::{BasicTokenResponse};
 use tokio::sync::{RwLock, RwLockWriteGuard};
 use tracing::debug;
-use crate::confidential::config::{ConfidentialClientConfig, ConfidentialClientConfigData};
-use crate::confidential::reqwest_client::OidcReqwestClient;
+
+use crate::confidential::config::{ConfidentialClientConfig, ConfidentialClientConfigData, ConfiguredClient};
 use crate::confidential::error::{ConfidentialClientError, WrappedRequestTokenError};
+use crate::confidential::reqwest_client::OidcReqwestClient;
 
 #[derive(Debug)]
 pub struct ConfidentialClient {
-    inner: BasicClient,
+    inner: ConfiguredClient,
     pub reqwest_client: OidcReqwestClient,
     pub config: ConfidentialClientConfigData,
 
@@ -104,7 +106,7 @@ impl ConfidentialClient {
     async fn fetch_token(&self) -> Result<Token, AuthError> {
         let response = self.inner.exchange_client_credentials()
             .add_scopes(self.config.scopes.clone())
-            .request_async(|request| { self.reqwest_client.async_http_client(request) })
+            .request_async(&|request| { self.reqwest_client.async_http_client(request) })
             .await
             .map_err(|error| {
                 AuthError::FailedToGetToken {
@@ -150,9 +152,11 @@ mod auth_tests {
     use pem::Pem;
     use rstest::{fixture, rstest};
     use url::Url;
+
     use opendut_util_core::project;
-    use crate::confidential::config::ConfidentialClientConfigData;
+
     use crate::confidential::client::{ConfidentialClient, ConfidentialClientRef};
+    use crate::confidential::config::ConfidentialClientConfigData;
     use crate::confidential::pem::PemFromConfig;
     use crate::confidential::reqwest_client::OidcReqwestClient;
 

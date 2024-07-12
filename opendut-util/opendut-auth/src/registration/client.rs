@@ -106,7 +106,7 @@ impl RegistrationClient {
                     .set_client_uri(Some(vec![(None, client_home_uri)]
                         .into_iter()
                         .collect()))
-                    .register_async(&registration_url, move |request| {
+                    .register_async(&registration_url, &move |request| {
                         self.inner.reqwest_client.async_http_client(request)
                     }).await;
                 match response {

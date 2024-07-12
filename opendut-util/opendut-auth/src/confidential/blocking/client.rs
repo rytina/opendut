@@ -5,7 +5,7 @@ use std::time::Duration;
 use chrono::{NaiveDateTime, Utc};
 use config::Config;
 use oauth2::{AccessToken, TokenResponse};
-use oauth2::basic::{BasicClient, BasicTokenResponse};
+use oauth2::basic::{BasicTokenResponse};
 use backoff::ExponentialBackoffBuilder;
 use std::sync::{RwLock, RwLockWriteGuard};
 use tokio::sync::{Mutex, TryLockError};
@@ -13,13 +13,13 @@ use tonic::{Request, Status};
 use tonic::metadata::MetadataValue;
 use tonic::service::Interceptor;
 use tracing::debug;
-use crate::confidential::config::{ConfidentialClientConfig, ConfidentialClientConfigData};
+use crate::confidential::config::{ConfidentialClientConfig, ConfidentialClientConfigData, ConfiguredClient};
 use crate::confidential::blocking::reqwest_client::OidcBlockingReqwestClient;
 use crate::confidential::error::{ConfidentialClientError, WrappedRequestTokenError};
 
 #[derive(Debug)]
 pub struct ConfidentialClient {
-    inner: BasicClient,
+    inner: ConfiguredClient,
     pub reqwest_client: OidcBlockingReqwestClient,
     pub config: ConfidentialClientConfigData,
 
@@ -150,7 +150,7 @@ impl ConfidentialClient {
     fn fetch_token(&self) -> Result<Token, AuthError> {
         let response = self.inner.exchange_client_credentials()
             .add_scopes(self.config.scopes.clone())
-            .request(|request| { self.reqwest_client.sync_http_client(request) })
+            .request(&|request| { self.reqwest_client.sync_http_client(request) })
             .map_err(|error| {
                 AuthError::FailedToGetToken {
                     message: "Fetching authentication token failed!".to_string(),
@@ -261,7 +261,7 @@ mod auth_tests {
         let reqwest_client = blocking::reqwest_client::OidcBlockingReqwestClient::from_pem(certificate).unwrap();
         let response = client.exchange_client_credentials()
             .add_scopes(vec![])
-            .request(|request| reqwest_client.sync_http_client(request))
+            .request(&|request| reqwest_client.sync_http_client(request))
             .expect("Failed to get token");
         
         let now = Utc::now().naive_utc();

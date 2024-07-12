@@ -64,8 +64,7 @@ pub async fn registration_client(#[future] confidential_carl_client: Confidentia
 mod auth_tests {
     use googletest::assert_that;
     use googletest::matchers::eq;
-    use http::{HeaderMap, HeaderValue};
-    use oauth2::HttpRequest;
+    use http::HeaderValue;
     use pem::Pem;
     use rstest::rstest;
 
@@ -82,18 +81,17 @@ mod auth_tests {
         let delete_client_url = client.inner.config.issuer_url.join("/admin/realms/opendut/clients/").unwrap().join(&delete_client_id.to_string())
             .map_err(|error| RegistrationClientError::InvalidConfiguration { error: format!("Invalid client URL: {}", error) })?;
 
-        let mut headers = HeaderMap::new();
+        let mut request = http::Request::builder()
+            .method(http::Method::DELETE)
+            .uri(delete_client_url.to_string());
+
         let bearer_header = format!("Bearer {}", access_token.to_string());
         let access_token_value = HeaderValue::from_str(&bearer_header)
             .map_err(|error| RegistrationClientError::InvalidConfiguration { error: error.to_string() })?;
-        headers.insert(http::header::AUTHORIZATION, access_token_value);
+        request = request.header(http::header::AUTHORIZATION, access_token_value);
 
-        let request = HttpRequest {
-            method: http::Method::DELETE,
-            url: delete_client_url,
-            headers,
-            body: vec![],
-        };
+        let request = request.body(vec![])
+            .map_err(|error| RegistrationClientError::InvalidConfiguration { error: format!("Error while constructing request: {}", error) })?;
 
         let reqwest_client = OidcReqwestClient::from_pem(issuer_ca)
             .map_err(|error| RegistrationClientError::InvalidConfiguration { error: format!("Failed to load certificate authority. {}", error) })?;
@@ -101,7 +99,7 @@ mod auth_tests {
         let response = reqwest_client.async_http_client(request)
             .await
             .map_err(|error| RegistrationClientError::RequestError { error: "OIDC client delete request failed!".to_string(), cause: Box::new(error) })?;
-        assert_eq!(response.status_code, 204, "Failed to delete client with id '{:?}': {:?}", client_id, response.body);
+        assert_eq!(response.status().as_u16(), 204, "Failed to delete client with id '{:?}': {:?}", client_id, response.body());
 
         Ok(())
     }

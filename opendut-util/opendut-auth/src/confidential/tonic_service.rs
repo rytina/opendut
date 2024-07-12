@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use http::{HeaderValue, Request, Response};
 use tonic::body::BoxBody;
-use tonic::transport::{Body, Channel};
+use tonic::transport::Channel;
 use tower::Service;
 use tracing::error;
 use crate::confidential::client::ConfidentialClient;
@@ -28,10 +28,11 @@ impl TonicAuthenticationService {
 }
 
 impl Service<Request<BoxBody>> for TonicAuthenticationService {
-    type Response = Response<Body>;
+    type Response = Response<BoxBody>;
     type Error = Box<dyn std::error::Error + Send + Sync>;
     #[allow(clippy::type_complexity)]
-    type Future = Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>> + Send>>;
+    type Future = Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>>>>;
+
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)
     }
@@ -49,7 +50,7 @@ impl Service<Request<BoxBody>> for TonicAuthenticationService {
             let token_result = confidential_client.as_ref()
                 .map(|manager| manager.get_token());
 
-            return match token_result {
+            match token_result {
                 None => {
                     // Authentication disabled
                     Ok(inner.call(request).await?)
@@ -75,7 +76,7 @@ impl Service<Request<BoxBody>> for TonicAuthenticationService {
                         }
                     }
                 }
-            };
+            }
         })
     }
 }
