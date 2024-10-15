@@ -1,8 +1,8 @@
 use crate::fs;
 use std::path::PathBuf;
-use std::process::Command;
 
-use crate::{constants, util};
+use crate::constants;
+use crate::core::commands;
 use crate::core::types::parsing::package::PackageSelection;
 use crate::Package;
 use crate::util::RunRequiringSuccess;
@@ -50,15 +50,11 @@ impl LicensesCli {
 }
 
 pub mod check {
-    use crate::core::dependency::Crate;
-
     use super::*;
 
     #[tracing::instrument]
     pub fn check_licenses() -> crate::Result {
-        util::install_crate(Crate::CargoDeny)?;
-
-        Command::new("cargo-deny")
+        commands::CARGO_DENY.command()
             .arg("check")
             .arg("--config").arg(cargo_deny_toml())
             .run_requiring_success()
@@ -69,18 +65,14 @@ pub mod json {
     use std::process::Stdio;
     use tracing::info;
 
-    use crate::core::dependency::Crate;
-
     use super::*;
 
     #[tracing::instrument]
     pub fn export_json(package: Package) -> crate::Result {
-        util::install_crate(Crate::CargoDeny)?;
-
         let out_file = out_file(package);
         fs::create_dir_all(out_file.parent().unwrap())?;
 
-        Command::new("cargo-deny")
+        commands::CARGO_DENY.command()
             .arg("--exclude-dev")
             .arg("list")
             .arg("--config").arg(cargo_deny_toml())
@@ -106,7 +98,7 @@ pub mod json {
 
 mod sbom {
     use tracing::info;
-    use crate::core::dependency::Crate;
+    use crate::core::commands::CARGO_SBOM;
 
     use super::*;
 
@@ -115,8 +107,6 @@ mod sbom {
 
     #[tracing::instrument]
     pub fn generate_sboms(packages: PackageSelection) -> crate::Result {
-        util::install_crate(Crate::CargoSbom)?;
-
         for package in packages.iter() {
             generate_sbom(package)?
         }
@@ -131,7 +121,7 @@ mod sbom {
         let sbom_dir = out_dir();
         fs::create_dir_all(&sbom_dir)?;
 
-        let sbom = Command::new("cargo-sbom")
+        let sbom = CARGO_SBOM.command()
             .args(["--cargo-package", &package.ident(), "--output-format", "spdx_json_2_3"])
             .output()?
             .stdout;
@@ -279,10 +269,9 @@ mod sbom {
 mod texts {
     use crate::fs;
     use std::path::PathBuf;
-    use std::process::Command;
     use tracing::info;
-    use crate::core::{constants, util};
-    use crate::core::dependency::Crate;
+    use crate::core::constants;
+    use crate::core::commands::CARGO_BUNDLE_LICENSES;
     use crate::core::util::RunRequiringSuccess;
 
     #[derive(Debug, clap::Parser)]
@@ -290,14 +279,12 @@ mod texts {
 
     #[tracing::instrument]
     pub fn collect_license_texts() -> crate::Result {
-        util::install_crate(Crate::CargoBundleLicenses)?;
-
         let out_dir = out_dir();
         fs::create_dir_all(&out_dir)?;
 
         let out_path = out_dir.join("NOTICES.yaml");
 
-        Command::new("cargo-bundle-licenses")
+        CARGO_BUNDLE_LICENSES.command()
             .args(["--format=yaml", "--output", out_path.to_str().unwrap()])
             .run_requiring_success()?;
 

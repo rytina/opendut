@@ -1,13 +1,12 @@
+use crate::core::commands::TRUNK;
 use crate::fs;
-use std::path::PathBuf;
-use std::process::Command;
-use tracing::info;
 use crate::Arch;
-use crate::core::dependency::Crate;
+use std::path::PathBuf;
+use tracing::info;
 
 use crate::core::types::parsing::package::PackageSelection;
-use crate::Package;
 use crate::util::RunRequiringSuccess;
+use crate::Package;
 
 const PACKAGE: Package = Package::Lea;
 
@@ -77,7 +76,7 @@ pub mod run {
     pub fn run(pass_through: Vec<String>) -> crate::Result {
         install_requirements()?;
 
-        Command::new("trunk")
+        TRUNK.command()
             .args([
                 "watch",
                 "--release",
@@ -92,8 +91,6 @@ pub mod run {
 #[tracing::instrument]
 fn install_requirements() -> crate::Result {
     crate::util::install_toolchain(Arch::Wasm)?;
-
-    crate::util::install_crate(Crate::Trunk)?;
 
     Ok(())
 }
@@ -110,7 +107,7 @@ fn build_impl(out_dir: PathBuf) -> crate::Result {
 
     fs::create_dir_all(&out_dir)?;
 
-    Command::new("trunk")
+    TRUNK.command()
         .args([
             "build",
             "--release",

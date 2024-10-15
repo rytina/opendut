@@ -675,6 +675,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "cicero"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cd119d2978b89bc3727210f31d49a49be60753797129e8afa2adf94139c1a76"
+dependencies = [
+ "anyhow",
+ "cicero_commands",
+ "cicero_core",
+ "clap",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "cicero_commands"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "562287553f648a699bd70f0aed2b09deb20f9ef35c775c92d67b786db6ec03e6"
+dependencies = [
+ "anyhow",
+ "cargo_metadata",
+ "cicero_core",
+ "indoc",
+ "tracing",
+ "which",
+]
+
+[[package]]
+name = "cicero_core"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a21800e94b41a0947232cb044b326a44617cb41b61b5e38588f07f382adb41e7"
+dependencies = [
+ "anyhow",
+ "tracing",
+]
+
+[[package]]
 name = "cipher"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3229,6 +3267,7 @@ dependencies = [
  "assert_fs",
  "cargo_metadata",
  "chrono",
+ "cicero",
  "clap",
  "flate2",
  "fs-err",
@@ -5941,6 +5980,7 @@ dependencies = [
  "once_cell",
  "regex",
  "sharded-slab",
+ "smallvec",
  "thread_local",
  "tracing",
  "tracing-core",
