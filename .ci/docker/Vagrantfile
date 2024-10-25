@@ -95,6 +95,13 @@ Vagrant.configure("2") do |config|
   # Run Ansible from the Vagrant VM
   config.vm.provision "ansible_local" do |ansible|
     # ansible.compatibility_mode = "2.0"
+
+    # BEGIN WORKAROUND for issue #307
+    ansible.install_mode = "pip_args_only"
+    ansible.pip_install_cmd = "sudo apt-get install -y python3-pip python-is-python3 haveged && sudo ln -s -f /usr/bin/pip3 /usr/bin/pip"
+    ansible.pip_args = "ansible==9.5.0"
+    # END WORKAROUND for issue #307
+
     ansible.playbook = "/vagrant/.ci/docker/vagrant/playbook.yml"
     ansible.become = true
     ansible.galaxy_role_file = "/vagrant/.ci/docker/vagrant/ansible-requirements.yml"
